@@ -1,5 +1,6 @@
 const utils = require('expect/build/jasmineUtils')
 const logger = require('./log')('when')
+const {printReceived} = require("jest-matcher-utils")
 
 const checkArgumentMatchers = (assertCall, args) => (match, matcher, i) => {
   logger.debug(`matcher check, match: ${match}, index: ${i}`)
@@ -54,6 +55,8 @@ class WhenMock {
             return valImpl(...args)
           }
         }
+
+        throw new Error(`no matching implementation for args: ${printReceived(args)}`)
       })
 
       return {
@@ -91,3 +94,4 @@ module.exports = {
   when,
   WhenMock
 }
+
