@@ -69,6 +69,8 @@ class WhenMock {
       mockResolvedValueOnce: val => mockReturnValue(matchers, assertCall, true)(()=>Promise.resolve(val)),
       mockRejectedValue: err => mockReturnValue(matchers, assertCall)(()=>Promise.reject(err)),
       mockRejectedValueOnce: err => mockReturnValue(matchers, assertCall, true)(()=>Promise.reject(err)),
+      mockThrowValue: err => mockReturnValue(matchers, assertCall)(()=>{throw err}),
+      mockThrowValueOnce: err => mockReturnValue(matchers, assertCall, true)(()=>{throw err}),
       mockImplementation: impl => mockReturnValue(matchers, assertCall)(impl),
       mockImplementationOnce: impl => mockReturnValue(matchers, assertCall, true)(impl)
     })
