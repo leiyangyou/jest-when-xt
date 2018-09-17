@@ -26,20 +26,20 @@ class WhenMock {
     this.fn = fn
     this.callMocks = []
 
-    const mockReturnValue = (matchers, assertCall, once = false) => (val) => {
+    const mockReturnValue = (matchers, assertCall, once = false) => (valImpl) => {
       // To enable dynamic replacement during a test:
       // * call mocks with equal matchers are removed
       // * `once` mocks are used prioritized
       this.callMocks = this.callMocks
         .filter((callMock) => once || callMock.once || !utils.equals(callMock.matchers, matchers))
-        .concat({ matchers, val, assertCall, once })
+        .concat({ matchers, valImpl, assertCall, once })
         .sort((a, b) => b.once - a.once)
 
       this.fn.mockImplementation((...args) => {
         logger.debug('mocked impl', args)
 
         for (let i = 0; i < this.callMocks.length; i++) {
-          const { matchers, val, assertCall } = this.callMocks[i]
+          const { matchers, valImpl, assertCall } = this.callMocks[i]
           const match = matchers.reduce(checkArgumentMatchers(assertCall, args), true)
 
           if (match) {
@@ -51,7 +51,7 @@ class WhenMock {
               }
               return true
             })
-            return val
+            return valImpl(...args)
           }
         }
       })
@@ -63,12 +63,14 @@ class WhenMock {
     }
 
     const mockFunctions = (matchers, assertCall) => ({
-      mockReturnValue: val => mockReturnValue(matchers, assertCall)(val),
-      mockReturnValueOnce: val => mockReturnValue(matchers, assertCall, true)(val),
-      mockResolvedValue: val => mockReturnValue(matchers, assertCall)(Promise.resolve(val)),
-      mockResolvedValueOnce: val => mockReturnValue(matchers, assertCall, true)(Promise.resolve(val)),
-      mockRejectedValue: err => mockReturnValue(matchers, assertCall)(Promise.reject(err)),
-      mockRejectedValueOnce: err => mockReturnValue(matchers, assertCall, true)(Promise.reject(err))
+      mockReturnValue: val => mockReturnValue(matchers, assertCall)(()=>val),
+      mockReturnValueOnce: val => mockReturnValue(matchers, assertCall, true)(()=>val),
+      mockResolvedValue: val => mockReturnValue(matchers, assertCall)(()=>Promise.resolve(val)),
+      mockResolvedValueOnce: val => mockReturnValue(matchers, assertCall, true)(()=>Promise.resolve(val)),
+      mockRejectedValue: err => mockReturnValue(matchers, assertCall)(()=>Promise.reject(err)),
+      mockRejectedValueOnce: err => mockReturnValue(matchers, assertCall, true)(()=>Promise.reject(err)),
+      mockImplementation: impl => mockReturnValue(matchers, assertCall)(impl),
+      mockImplementationOnce: impl => mockReturnValue(matchers, assertCall, true)(impl)
     })
 
     this.calledWith = (...matchers) => ({ ...mockFunctions(matchers, false) })
