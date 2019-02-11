@@ -1,6 +1,6 @@
 const utils = require('expect/build/jasmineUtils')
 const logger = require('./log')('when')
-const {printReceived} = require("jest-matcher-utils")
+const { printReceived } = require('jest-matcher-utils')
 
 const checkArgumentMatchers = (assertCall, args) => (match, matcher, i) => {
   logger.debug(`matcher check, match: ${match}, index: ${i}`)
@@ -27,7 +27,7 @@ class WhenMock {
     this.fn = fn
     this.callMocks = []
 
-    const mockReturnValue = (matchers, assertCall, once = false) => (valImpl) => {
+    const mockImplmentation = (matchers, assertCall, once = false) => (valImpl) => {
       // To enable dynamic replacement during a test:
       // * call mocks with equal matchers are removed
       // * `once` mocks are used prioritized
@@ -66,16 +66,16 @@ class WhenMock {
     }
 
     const mockFunctions = (matchers, assertCall) => ({
-      mockReturnValue: val => mockReturnValue(matchers, assertCall)(()=>val),
-      mockReturnValueOnce: val => mockReturnValue(matchers, assertCall, true)(()=>val),
-      mockResolvedValue: val => mockReturnValue(matchers, assertCall)(()=>Promise.resolve(val)),
-      mockResolvedValueOnce: val => mockReturnValue(matchers, assertCall, true)(()=>Promise.resolve(val)),
-      mockRejectedValue: err => mockReturnValue(matchers, assertCall)(()=>Promise.reject(err)),
-      mockRejectedValueOnce: err => mockReturnValue(matchers, assertCall, true)(()=>Promise.reject(err)),
-      mockThrowValue: err => mockReturnValue(matchers, assertCall)(()=>{throw err}),
-      mockThrowValueOnce: err => mockReturnValue(matchers, assertCall, true)(()=>{throw err}),
-      mockImplementation: impl => mockReturnValue(matchers, assertCall)(impl),
-      mockImplementationOnce: impl => mockReturnValue(matchers, assertCall, true)(impl)
+      mockReturnValue: val => mockImplmentation(matchers, assertCall)(() => val),
+      mockReturnValueOnce: val => mockImplmentation(matchers, assertCall, true)(() => val),
+      mockResolvedValue: val => mockImplmentation(matchers, assertCall)(() => Promise.resolve(val)),
+      mockResolvedValueOnce: val => mockImplmentation(matchers, assertCall, true)(() => Promise.resolve(val)),
+      mockRejectedValue: err => mockImplmentation(matchers, assertCall)(() => Promise.reject(err)),
+      mockRejectedValueOnce: err => mockImplmentation(matchers, assertCall, true)(() => Promise.reject(err)),
+      mockThrowValue: err => mockImplmentation(matchers, assertCall)(() => { throw err }),
+      mockThrowValueOnce: err => mockImplmentation(matchers, assertCall, true)(() => { throw err }),
+      mockImplementation: impl => mockImplmentation(matchers, assertCall)(impl),
+      mockImplementationOnce: impl => mockImplmentation(matchers, assertCall, true)(impl)
     })
 
     this.calledWith = (...matchers) => ({ ...mockFunctions(matchers, false) })
@@ -94,4 +94,3 @@ module.exports = {
   when,
   WhenMock
 }
-

@@ -3,6 +3,8 @@ const { stringContaining } = expect
 const errMsg = ({ expect, actual }) =>
   new RegExp(`Expected.*${expect}.*\n.*Received.*${actual}`)
 
+const noImplementationErrMsg = /no matching implementation/
+
 describe('When', () => {
   let spyEquals, when, WhenMock, mockLogger
 
@@ -54,6 +56,7 @@ describe('When', () => {
       const fn = jest.fn()
 
       when(fn).calledWith(1).mockReturnValue('x')
+      when(fn).calledWith(2).mockReturnValue(undefined)
 
       expect(fn(1)).toEqual('x')
       expect(spyEquals).toBeCalledWith(1, 1)
@@ -131,12 +134,12 @@ describe('When', () => {
       expect(fn(2)).toEqual('y')
     })
 
-    it('returns nothing if no declared value matches', () => {
+    it('throws if no declared value matches', () => {
       const fn = jest.fn()
 
       when(fn).calledWith(1, 2).mockReturnValue('x')
 
-      expect(fn(5, 6)).toBeUndefined()
+      expect(() => fn(5, 6)).toThrow(noImplementationErrMsg)
       expect(mockLogger.debug).toBeCalledWith(stringContaining('matcher: 1'))
       expect(mockLogger.debug).not.toBeCalledWith(stringContaining('matcher: 2'))
     })
@@ -149,7 +152,7 @@ describe('When', () => {
       when(fn2).calledWith('foo').mockReturnValue('y')
 
       expect(() => fn1(2)).toThrow(errMsg({ expect: 1, actual: 2 }))
-      expect(() => fn2('bar')).not.toThrow()
+      expect(() => fn2('bar')).toThrow(noImplementationErrMsg)
     })
 
     it('mockReturnValueOnce: should return specified value only once', () => {
@@ -160,7 +163,7 @@ describe('When', () => {
 
       expect(fn('foo')).toEqual('bar')
       expect(fn('foo')).toEqual('cbs')
-      expect(fn('foo')).toBeUndefined()
+      expect(() => fn('foo')).toThrow(noImplementationErrMsg)
     })
 
     it('mockReturnValueOnce: should return specified value only once and the regular value after that', () => {
@@ -205,7 +208,7 @@ describe('When', () => {
       when(fn).calledWith('foo').mockResolvedValueOnce('bar')
 
       await expect(fn('foo')).resolves.toEqual('bar')
-      expect(await fn('foo')).toBeUndefined()
+      expect(() => fn('foo')).toThrow(noImplementationErrMsg)
     })
 
     it('mockResolvedValueOnce: should return specified value only once and the regular value after that', async () => {
@@ -226,7 +229,7 @@ describe('When', () => {
       when(fn).expectCalledWith('foo').mockResolvedValueOnce('bar')
 
       await expect(fn('foo')).resolves.toEqual('bar')
-      expect(await fn('foo')).toBeUndefined()
+      expect(() => fn('foo')).toThrow(noImplementationErrMsg)
     })
 
     it('mockRejectedValue: should return a rejected Promise', async () => {
@@ -251,7 +254,7 @@ describe('When', () => {
       when(fn).calledWith('foo').mockRejectedValueOnce(new Error('bar'))
 
       await expect(fn('foo')).rejects.toThrow('bar')
-      expect(await fn('foo')).toBeUndefined()
+      expect(() => fn('foo')).toThrow(noImplementationErrMsg)
     })
 
     it('mockRejectedValueOnce: works with expectCalledWith', async () => {
@@ -260,7 +263,34 @@ describe('When', () => {
       when(fn).expectCalledWith('foo').mockRejectedValueOnce(new Error('bar'))
 
       await expect(fn('foo')).rejects.toThrow('bar')
-      expect(await fn('foo')).toBeUndefined()
+      expect(() => fn('foo')).toThrow(noImplementationErrMsg)
+    })
+
+    it('mockThrowValue: should throw a value', () => {
+      const fn = jest.fn()
+      when(fn).calledWith('foo').mockThrowValue(new Error('error'))
+      expect(() => fn('foo')).toThrow(/error/)
+    })
+
+    it('mockThrowValueOnce: should throw a value only once', () => {
+      const fn = jest.fn()
+      when(fn).calledWith('foo').mockThrowValueOnce(new Error('error'))
+      when(fn).calledWith('foo').mockReturnValue('bar')
+      try { fn('foo') } catch (err) { }
+      expect(fn('foo')).toEqual('bar')
+    })
+
+    it('mockImplementation: should use the supplied implementation', () => {
+      const fn = jest.fn()
+      when(fn).calledWith('foo').mockImplementation(() => 'bar')
+      expect(fn('foo')).toEqual('bar')
+    })
+
+    it('mockImplementationOnce: should use the supplied implementation only once', () => {
+      const fn = jest.fn()
+      when(fn).calledWith('foo').mockImplementationOnce(() => 'bar')
+      fn('foo')
+      expect(() => fn('foo')).toThrow(noImplementationErrMsg)
     })
   })
 })
